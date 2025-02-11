@@ -1,16 +1,21 @@
-#include <TinyGPS++.h>  // GPS functionality using TinyGPS++ library
+#include <TinyGPS++.h>
+#include <SoftwareSerial.h>
 
-// Function declarations for temperature sensor, ultrasonic, and weight sensor (commented out)
+// Function declarations for temperature sensor, ultrasonic, and weight sensor
 // long readUltrasonic();  // Commented out
 // void setupWeightSensor();  // Commented out
 // long readWeight();  // Commented out
 
-void setupGPS();  // GPS setup function declaration
-String readGPS();  // GPS reading function declaration
+// GPS Setup
+TinyGPSPlus gps;
+SoftwareSerial gpsSerial(4, 3); // GPS RX → Arduino D4, GPS TX → Arduino D3
+
+void setupGPS();
+String readGPS();
 
 void setup() {
-  // Start serial communication for debugging and GPS data display
   Serial.begin(9600);
+  gpsSerial.begin(9600);
   
   // setupWeightSensor();  // Commented out for now
   setupGPS();  // Initialize GPS
@@ -20,6 +25,7 @@ void setup() {
 
 void loop() {
   // The following sensors are disabled for now:
+  
   // Read data from Ultrasonic Sensor
   // long distance = readUltrasonic();
   // Serial.print("Distance: ");
@@ -41,24 +47,20 @@ void loop() {
   delay(1000); // Delay for 1 second before repeating the loop
 }
 
-// Setup function for GPS using default Serial (pins 0 and 1)
+// Setup function for GPS
 void setupGPS() {
-  // Print initialization message to Serial Monitor
   Serial.println("GPS initialized.");
 }
 
-// Function to read GPS data using Serial communication
+// Function to read GPS data using SoftwareSerial
 String readGPS() {
-  TinyGPSPlus gps;
+  while (gpsSerial.available() > 0) {
+    char c = gpsSerial.read();
+    gps.encode(c);
 
-  while (Serial.available() > 0) {  // Read data from the GPS module connected to pins 0 and 1
-    char c = Serial.read();  // Read the incoming byte from the GPS module
-    gps.encode(c);  // Feed the byte to the TinyGPSPlus library
-
-    // If a new GPS sentence is available
+    // If new GPS location data is available
     if (gps.location.isUpdated()) {
-      String location = "Latitude: " + String(gps.location.lat(), 6) + ", Longitude: " + String(gps.location.lng(), 6);
-      return location;  // Return the formatted GPS location
+      return "Latitude: " + String(gps.location.lat(), 6) + ", Longitude: " + String(gps.location.lng(), 6);
     }
   }
   return "";  // Return empty string if no new data is available
