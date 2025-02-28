@@ -1,5 +1,6 @@
 #include <TinyGPS++.h>
 #include <SoftwareSerial.h>
+// #include <HX711.h>  // Uncomment when using the weight sensor
 
 // Function declarations for temperature sensor, ultrasonic, and weight sensor
 // long readUltrasonic();  // Commented out
@@ -12,6 +13,21 @@ SoftwareSerial gpsSerial(4, 3); // GPS RX → Arduino D4, GPS TX → Arduino D3
 
 void setupGPS();
 String readGPS();
+
+// Weight Sensor Setup (Commented for now)
+// #define LOADCELL_DOUT_PIN 5
+// #define LOADCELL_SCK_PIN 6
+// HX711 loadCell;
+
+// void setupWeightSensor() {
+//   loadCell.begin(LOADCELL_DOUT_PIN, LOADCELL_SCK_PIN);
+//   loadCell.set_scale(2280.f); // Calibrate this value based on your load cell
+//   loadCell.tare(); // Reset the scale to 0
+// }
+
+// long readWeight() {
+//   return loadCell.get_units(10); // Average over 10 readings
+// }
 
 void setup() {
   Serial.begin(9600);
