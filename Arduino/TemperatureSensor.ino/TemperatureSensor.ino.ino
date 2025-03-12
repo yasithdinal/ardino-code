@@ -1,30 +1,24 @@
-#define TEMPERATURE_PIN A0  // Analog pin to read LM35 sensor
+#define LM35_PIN 35  // Define LM35 VOUT connected to GPIO35
+#define ADC_MAX 4095  // ESP32 ADC is 12-bit (0-4095)
+#define REF_VOLTAGE 3.3  // ESP32 operates at 3.3V
 
 void setup() {
-  // Start serial communication
-  Serial.begin(9600);  
+  Serial.begin(115200); // Start serial communication
+  delay(1000); // Allow sensor stabilization
 }
 
 void loop() {
-  float temperature = readTemperature();  // Call the function to read temperature
+  int adcValue = analogRead(LM35_PIN);  // Read raw ADC value
+  float voltage = adcValue * (REF_VOLTAGE / ADC_MAX); // Convert ADC value to voltage
+  float temperature = voltage * 100.0;  // LM35 outputs 10mV per °C
 
-  // Display the temperature on the serial monitor
-  Serial.print("Temperature: ");
-  Serial.print(temperature);
-  Serial.println(" C");
-
-  // Check if the temperature is above 50°C and show a warning
-  if (temperature > 50.0) {
-    Serial.println("Warning: High temperature detected!");
+  // **Fix for incorrect high readings**
+  if (temperature > 100 || temperature < 0) { 
+    Serial.println("Sensor Error! Check wiring.");
+  } else {
+    Serial.print(temperature, 2);  // Print accurate temperature
+    Serial.println(" °C");
   }
 
-  delay(1000);  // Delay for 1 second before the next reading
-}
-
-// Function to read temperature from LM35 sensor
-float readTemperature() {
-  int sensorValue = analogRead(TEMPERATURE_PIN);  // Read the analog value from LM35
-  float voltage = sensorValue * (5.0 / 1023.0);  // Convert the analog value to voltage (0-5V)
-  float temperature = voltage * 100.0;  // LM35 outputs 10mV per degree Celsius (so multiply by 100)
-  return temperature;  // Return the temperature in Celsius
+  delay(1000);  
 }
