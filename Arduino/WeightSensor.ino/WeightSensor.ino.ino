@@ -1,42 +1,43 @@
-#include <HX711.h>
+#include "HX711.h"
 
-#define LOADCELL_DOUT_PIN 5
-#define LOADCELL_SCK_PIN 6
+#define DOUT 4  // DT pin (Change if needed)
+#define CLK 15   // SCK pin (Change if needed)
 
-HX711 loadCell;
-
-float scale_factor = 2280.0; // Adjust this based on calibration
+HX711 scale;
 
 void setup() {
-  Serial.begin(9600);
-  setupWeightSensor();
-}
+  Serial.begin(115200);
+  Serial.println("Initializing HX711...");
 
-void setupWeightSensor() {
-  // Initialize load cell
-  loadCell.begin(LOADCELL_DOUT_PIN, LOADCELL_SCK_PIN);
-  loadCell.set_scale(scale_factor); // Calibrate this value
-  loadCell.tare(); // Reset the scale to 0
-}
+  scale.begin(DOUT, CLK);
 
-float readWeight() {
-  if (loadCell.is_ready()) {
-    float weight = loadCell.get_units(10); // Average over 10 readings
-    if (weight < 0) weight = 0; // Ensure no negative values
-    if (weight > 7.0) weight = 7.0; // Cap weight at 7 kg
-    return weight;
+  if (scale.is_ready()) {
+    Serial.println("HX711 is ready!");
+
+    scale.set_scale(2280.0);  // Set scale factor (adjust this)
+    scale.tare();             // Reset to zero
+    Serial.println("Scale is ready for weighing.");
   } else {
-    Serial.println("Error: Load cell not ready");
-    return -1;
+    Serial.println("ERROR: HX711 not detected. Check wiring!");
   }
 }
 
 void loop() {
-  float weight = readWeight();
-  if (weight != -1) {
-    Serial.print("Weight: ");
-    Serial.print(weight);
-    Serial.println(" kg");
+  if (scale.is_ready()) {
+    delay(500); // Stabilization delay
+    float weight = scale.get_units(10);  // Average of 10 readings
+
+    if (weight >= 0 && weight <= 10000) {  // Check range
+      float weight_kg = weight / 1000.0;
+      Serial.print("Weight: ");
+      Serial.print(weight_kg, 2);
+      Serial.println(" kg");
+    } else {
+      Serial.println("Warning: Weight out of range. Recalibrate.");
+    }
+  } else {
+    Serial.println("ERROR: HX711 not responding.");
   }
-  delay(1000); // Read every second
+
+  delay(1000);
 }
