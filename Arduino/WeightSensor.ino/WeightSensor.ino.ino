@@ -1,43 +1,44 @@
 #include "HX711.h"
 
-#define DOUT 4  // DT pin (Change if needed)
-#define CLK 15   // SCK pin (Change if needed)
+const int DT_PIN = 19;
+const int SCK_PIN = 4;
 
 HX711 scale;
+float calibration_factor = -40000;  // Start with larger value
 
 void setup() {
   Serial.begin(115200);
-  Serial.println("Initializing HX711...");
-
-  scale.begin(DOUT, CLK);
-
-  if (scale.is_ready()) {
-    Serial.println("HX711 is ready!");
-
-    scale.set_scale(2280.0);  // Set scale factor (adjust this)
-    scale.tare();             // Reset to zero
-    Serial.println("Scale is ready for weighing.");
-  } else {
-    Serial.println("ERROR: HX711 not detected. Check wiring!");
+  scale.begin(DT_PIN, SCK_PIN);
+  
+  // Debug: Print raw values first
+  Serial.println("Raw readings (no calibration):");
+  for(int i=0; i<10; i++) {
+    Serial.println(scale.read());
+    delay(500);
   }
+  
+  scale.tare();
+  scale.set_scale(calibration_factor);
+  Serial.println("Tared. Now add known weight and calibrate:");
+  Serial.println("'+' = increase factor, '-' = decrease, 't' = tare");
 }
 
 void loop() {
-  if (scale.is_ready()) {
-    delay(500); // Stabilization delay
-    float weight = scale.get_units(10);  // Average of 10 readings
+  Serial.print("Raw: ");
+  Serial.print(scale.read());  // Show raw reading
+  Serial.print(" | Weight: ");
+  Serial.print(scale.get_units(5), 2);  // Average 5 readings
+  Serial.println(" kg");
 
-    if (weight >= 0 && weight <= 10000) {  // Check range
-      float weight_kg = weight / 1000.0;
-      Serial.print("Weight: ");
-      Serial.print(weight_kg, 2);
-      Serial.println(" kg");
-    } else {
-      Serial.println("Warning: Weight out of range. Recalibrate.");
-    }
-  } else {
-    Serial.println("ERROR: HX711 not responding.");
+  if(Serial.available()) {
+    char c = Serial.read();
+    if(c == '+') calibration_factor *= 1.1;  // Increase by 10%
+    if(c == '-') calibration_factor *= 0.9; // Decrease by 10%
+    if(c == 't') scale.tare();
+    scale.set_scale(calibration_factor);
+    Serial.print("New factor: ");
+    Serial.println(calibration_factor);
   }
-
-  delay(1000);
+  
+  delay(500);
 }
