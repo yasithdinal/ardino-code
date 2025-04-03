@@ -5,6 +5,8 @@ const int SCK_PIN = 4;
 
 HX711 scale;
 float calibration_factor = -40000;  // Start with larger value
+unsigned long previousMillis = 0;
+const long interval = 10000;  // 10 second interval
 
 void setup() {
   Serial.begin(115200);
@@ -24,21 +26,43 @@ void setup() {
 }
 
 void loop() {
-  Serial.print("Raw: ");
-  Serial.print(scale.read());  // Show raw reading
-  Serial.print(" | Weight: ");
-  Serial.print(scale.get_units(5), 2);  // Average 5 readings
-  Serial.println(" kg");
+  unsigned long currentMillis = millis();
+  
+  // Only take readings every 10 seconds
+  if (currentMillis - previousMillis >= interval) {
+    previousMillis = currentMillis;
+    
+    float raw = scale.read();
+    float weight = scale.get_units(5);  // Average 5 readings
+    
+    // Only display weights between 0-10 kg
+    if (weight >= 0 && weight <= 10) {
+      Serial.print("Raw: ");
+      Serial.print(raw);
+      Serial.print(" | Weight: ");
+      Serial.print(weight, 2);
+      Serial.println(" kg");
+    }
+  }
 
+  // Calibration adjustments (works anytime)
   if(Serial.available()) {
     char c = Serial.read();
-    if(c == '+') calibration_factor *= 1.1;  // Increase by 10%
-    if(c == '-') calibration_factor *= 0.9; // Decrease by 10%
-    if(c == 't') scale.tare();
-    scale.set_scale(calibration_factor);
-    Serial.print("New factor: ");
-    Serial.println(calibration_factor);
+    if(c == '+') {
+      calibration_factor *= 1.1;  // Increase by 10%
+      scale.set_scale(calibration_factor);
+      Serial.print("New factor: ");
+      Serial.println(calibration_factor);
+    }
+    if(c == '-') {
+      calibration_factor *= 0.9; // Decrease by 10%
+      scale.set_scale(calibration_factor);
+      Serial.print("New factor: ");
+      Serial.println(calibration_factor);
+    }
+    if(c == 't') {
+      scale.tare();
+      Serial.println("Tared (zeroed)");
+    }
   }
-  
-  delay(500);
 }
